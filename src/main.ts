@@ -170,7 +170,7 @@ function pushState(): void {
       const wc = t.view.webContents;
       return {
         id: t.id,
-        title: wc.getTitle() || wc.getURL() || "New Tab",
+        title: wc.getTitle() || wc.getURL() || "Home",
         favicon: t.favicon,
         loading: wc.isLoading(),
       };
@@ -292,7 +292,7 @@ function buildMenu(): void {
     {
       label: "Tab",
       submenu: [
-        { label: "New Tab", accelerator: "CmdOrCtrl+T", click: () => createTab(START) },
+        { label: "Home", accelerator: "CmdOrCtrl+T", click: () => createTab(START) },
         {
           label: "Close Tab",
           accelerator: "CmdOrCtrl+W",

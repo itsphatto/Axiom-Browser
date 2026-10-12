@@ -24,10 +24,13 @@
         <line x1="6.5" y1="3" x2="6.5" y2="13" />
       </svg>
     </button>
-    <img id="logo" src="../assets/DevXLogo.svg" alt="Dev-X" draggable="false" />
-    <button id="back" title="Back" disabled>&#8592;</button>
-    <button id="forward" title="Forward" disabled>&#8594;</button>
-    <button id="reload" title="Reload">&#8635;</button>
+
+    <div id="nav">
+      <button id="back" title="Back" disabled>&#8592;</button>
+      <button id="forward" title="Forward" disabled>&#8594;</button>
+      <button id="reload" title="Reload">&#8635;</button>
+    </div>
+
     <form id="address-form" autocomplete="off">
       <input
         id="address"
@@ -38,11 +41,7 @@
     </form>
   </header>
 
-  <!-- These two must stay AFTER #toolbar and #sidebar-drag in the HTML:
-       with overlapping app-region areas, the later element wins,
-       so their no-drag areas cut a hole in the drag areas above. -->
   <div id="resizer" title="Drag to resize, double-click to reset"></div>
-  <img id="logo" src="../assets/DevXLogo.svg" alt="Dev-X" draggable="false" />
   <script src="../dist/renderer.js"></script>
 </body>
 </html>

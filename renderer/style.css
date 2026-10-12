@@ -6,7 +6,7 @@
   --sidebar-w: 240px; /* updated live by renderer.ts (0px when hidden) */
   --toolbar-h: 48px;
 
-  --tint-a: rgb(77, 121, 153);
+  --tint-a: rgba(92, 142, 179, 0.55);
   --tint-b: rgba(185, 185, 185, 0.55);
 
   --text: #ffffff;
@@ -50,7 +50,7 @@ body.resizing {
   width: var(--sidebar-w);
   /* top padding leaves room for the title bar row */
   padding: calc(var(--toolbar-h) + 4px) 10px 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -86,17 +86,6 @@ body.resizing #resizer {
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* Logo: far left of the top bar (clears macOS traffic lights) */
-#logo {
-  position: fixed;
-  top: 10px;
-  left: calc(env(titlebar-area-x, 0px) + 10px);
-  width: 28px;
-  height: 28px;
-  z-index: 30;
-  pointer-events: none;
-  user-select: none;
-}
 
 /* Toggle: lives in the toolbar, right after the logo */
 #toggle-sidebar {
@@ -119,10 +108,9 @@ body.resizing #resizer {
   left: 0;
   right: 0;
   height: var(--toolbar-h);
-  /* leave room for the native window buttons on the right */
   padding: 0
     calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px) + 10px)
-    0 calc(env(titlebar-area-x, 0px) + 48px); /* clears the logo */
+    0 calc(env(titlebar-area-x, 0px) + 10px);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -327,3 +315,12 @@ body.sidebar-compact .tab .tab-close {
   border-radius: 8px; opacity: 0;
 }
 body.sidebar-compact .tab:hover .tab-close { opacity: 1; background: var(--active); }
+
+
+#nav {
+  display:flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: max(0px, calc(var(--sidebar-w) - 34px));
+  -webkit-app-region: no-drag;
+}
