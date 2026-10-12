@@ -21,7 +21,7 @@ const VIEW_RADIUS = 12;
 const START = "dev-x://start"; // internal marker for the start page, not a real URL
 const START_PAGE = path.join(__dirname, "../renderer/newtab.html");
 const MAX_HISTORY = 50;
-const RECENT_SHOWN = 4;
+const START_BG = "#25285a";
 
 interface Tab {
   id: number;
@@ -110,15 +110,7 @@ function isStartUrl(url: string): boolean {
   return url.includes("newtab.html");
 }
 
-/** Hands the recent pages to the start page (it only renders them as text). */
-function sendStartData(wc: WebContents): void {
-  const items = history
-    .slice(0, RECENT_SHOWN)
-    .map(({ url, title, favicon }) => ({ url, title, favicon }));
-  wc.executeJavaScript(
-    `window.renderRecent && window.renderRecent(${JSON.stringify(items)})`
-  ).catch(() => {});
-}
+
 
 // ---------- navigation helpers ----------
 /** URL -> site. Anything else -> Google search. Only http(s) is allowed. */
@@ -220,8 +212,7 @@ function createTab(input: string = START): void {
   view.setBorderRadius(VIEW_RADIUS);
   const wc = view.webContents;
 
-  // The start page is see-through (shows the window gradient); real sites are opaque.
-  view.setBackgroundColor(input === START ? "#00000000" : "#ffffff");
+  view.setBackgroundColor(input === START ? START_BG : "#ffffff");
 
   wc.setWindowOpenHandler(({ url }) => {
     createTab(url);
@@ -237,7 +228,7 @@ function createTab(input: string = START): void {
   // Registered before the pushState loop below so state is already up to date.
   wc.on("did-navigate", (_e, url) => {
     tab.favicon = "";
-    view.setBackgroundColor(isStartUrl(url) ? "#00000000" : "#ffffff");
+    view.setBackgroundColor(isStartUrl(url) ? START_BG : "#ffffff");
     recordVisit(tab, true);
   });
 
@@ -245,7 +236,6 @@ function createTab(input: string = START): void {
 
   wc.on("did-finish-load", () => {
     recordVisit(tab, false);
-    if (isStartUrl(wc.getURL())) sendStartData(wc);
   });
 
   for (const evt of [
