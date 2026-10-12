@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: http: data:;"
+  />
+  <title>Dev-X</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside id="sidebar">
+    <div id="sidebar-drag"></div>
+    <button id="new-tab"><span>+</span><span class="label"> New Tab</span></button>
+    <div id="tab-list"></div>
+  </aside>
+
+  <header id="toolbar">
+    <button id="toggle-sidebar" title="Toggle sidebar">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+           stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+        <rect x="2" y="3" width="12" height="10" rx="2" />
+        <line x1="6.5" y1="3" x2="6.5" y2="13" />
+      </svg>
+    </button>
+    <img id="logo" src="../assets/DevXLogo.svg" alt="Dev-X" draggable="false" />
+    <button id="back" title="Back" disabled>&#8592;</button>
+    <button id="forward" title="Forward" disabled>&#8594;</button>
+    <button id="reload" title="Reload">&#8635;</button>
+    <form id="address-form" autocomplete="off">
+      <input
+        id="address"
+        type="text"
+        spellcheck="false"
+        placeholder="Search Google or enter a URL"
+      />
+    </form>
+  </header>
+
+  <!-- These two must stay AFTER #toolbar and #sidebar-drag in the HTML:
+       with overlapping app-region areas, the later element wins,
+       so their no-drag areas cut a hole in the drag areas above. -->
+  <div id="resizer" title="Drag to resize, double-click to reset"></div>
+  <img id="logo" src="../assets/DevXLogo.svg" alt="Dev-X" draggable="false" />
+  <script src="../dist/renderer.js"></script>
+</body>
+</html>

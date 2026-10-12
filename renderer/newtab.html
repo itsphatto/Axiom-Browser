@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src https: http: data:;"
+  />
+  <title>New Tab</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: transparent; /* the window's gradient shows through */
+    }
+
+    body {
+      overflow-y: auto;
+      color: #fff;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      user-select: none;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* ---------- hero ---------- */
+    .hero { text-align: center; }
+    #time { font-size: 72px; font-weight: 200; letter-spacing: -2px; line-height: 1.1; }
+    #welcome { font-size: 22px; font-weight: 500; margin-top: 6px; }
+    #date { font-size: 14px; opacity: 0.75; margin-top: 4px; }
+
+    /* ---------- glass surfaces ---------- */
+    .glass {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+    }
+
+    /* ---------- search bar ---------- */
+    #search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 54px;
+      padding: 0 20px;
+      border-radius: 27px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    #search:focus-within {
+      background: rgba(255, 255, 255, 0.32);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16), 0 0 0 2px rgba(255, 255, 255, 0.7);
+    }
+    #search svg { flex: none; opacity: 0.85; }
+    #q {
+      flex: 1;
+      height: 100%;
+      color: #fff;
+      background: transparent;
+      border: none;
+      outline: none;
+      font: inherit;
+      font-size: 16px;
+      text-shadow: none;
+      user-select: text;
+    }
+    #q::placeholder { color: rgba(255, 255, 255, 0.75); }
+
+    /* ---------- sections ---------- */
+    h2 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    /* ---------- favorites ---------- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 12px;
+    }
+    .tile { position: relative; }
+    .tile-link, .tile-add {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px 8px 12px;
+      border-radius: 16px;
+      color: inherit;
+      text-decoration: none;
+      font: inherit;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      transition: background 0.15s, transform 0.15s;
+    }
+    .tile-link:hover, .tile-add:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+    .tile-add { border-style: dashed; min-height: 100%; justify-content: center; }
+    .tile-add .letter { background: rgba(255, 255, 255, 0.25); font-size: 24px; font-weight: 300; }
+    .tile-name {
+      max-width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 12px;
+    }
+    .tile-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      line-height: 18px;
+      font-size: 14px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.3);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0;
+    }
+    .tile:hover .tile-remove { opacity: 1; }
+
+    .letter {
+      flex: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      text-shadow: none;
+    }
+
+    /* ---------- recent ---------- */
+    .recent {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 8px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: inherit;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: background 0.15s;
+    }
+    .row:hover { background: rgba(255, 255, 255, 0.26); }
+    .row .letter, .row img { flex: none; width: 28px; height: 28px; border-radius: 8px; font-size: 13px; }
+    .row-text { display: flex; flex-direction: column; min-width: 0; }
+    .row-title, .row-host {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .row-title { font-size: 13px; }
+    .row-host { font-size: 11px; opacity: 0.7; }
+    .empty { font-size: 13px; opacity: 0.7; }
+
+    /* ---------- add dialog ---------- */
+    dialog {
+      width: 320px;
+      padding: 20px;
+      color: #fff;
+      background: rgba(60, 40, 90, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+    }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
+    dialog h3 { margin: 0 0 14px; font-size: 16px; }
+    dialog input {
+      width: 100%;
+      height: 36px;
+      margin-bottom: 10px;
+      padding: 0 12px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      outline: none;
+      font: inherit;
+      user-select: text;
+    }
+    dialog input:focus { border-color: #fff; }
+    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .actions button {
+      padding: 8px 16px;
+      color: #fff;
+      font: inherit;
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .actions button.primary { background: #ff6b8b; }
+    #add-error { min-height: 16px; margin: 0; font-size: 12px; color: #ffd0d8; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div id="time"></div>
+      <div id="welcome"></div>
+      <div id="date"></div>
+    </section>
+
+    <form id="search" autocomplete="off">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="16.5" y1="16.5" x2="21" y2="21" />
+      </svg>
+      <input id="q" type="text" spellcheck="false" placeholder="Search Google or enter a URL" />
+    </form>
+
+    <section>
+      <h2>Favorites</h2>
+      <div id="favorites" class="grid"></div>
+    </section>
+
+    <section>
+      <h2>Recently visited</h2>
+      <div id="recent" class="recent"></div>
+    </section>
+  </main>
+
+  <dialog id="add-dialog">
+    <form id="add-form" autocomplete="off">
+      <h3>Add favorite</h3>
+      <input id="add-name" type="text" placeholder="Name (e.g. GitHub)" />
+      <input id="add-url" type="text" placeholder="Website (e.g. github.com)" />
+      <p id="add-error"></p>
+      <div class="actions">
+        <button type="button" id="add-cancel">Cancel</button>
+        <button type="submit" class="primary">Add</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="newtab.js"></script>
+</body>
+</html>
