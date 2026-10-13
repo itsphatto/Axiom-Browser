@@ -1,7 +1,7 @@
 {
-  "name": "my-arc",
+  "name": "Axiom",
   "version": "0.1.0",
-  "description": "A tiny Arc-style browser built on Electron",
+  "description": "Light Weight Custom Browser",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",

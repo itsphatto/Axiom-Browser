@@ -27,7 +27,9 @@ interface Tab {
   id: number;
   view: WebContentsView;
   favicon: string;
+  hidden?: boolean;
 }
+
 
 interface Visit {
   url: string;
@@ -162,15 +164,17 @@ function pushState(): void {
   const url = isStartUrl(rawUrl) ? "" : rawUrl;
 
   win.webContents.send("state", {
-    tabs: tabs.map((t) => {
-      const wc = t.view.webContents;
-      return {
-        id: t.id,
-        title: wc.getTitle() || wc.getURL() || "Axiom",
-        favicon: t.favicon,
-        loading: wc.isLoading(),
-      };
-    }),
+    tabs: tabs
+      .filter((t) => !t.hidden)
+      .map((t) => {
+        const wc = t.view.webContents;
+        return {
+          id: t.id,
+          title: wc.getTitle() || wc.getURL() || "Axiom",
+          favicon: t.favicon,
+          loading: wc.isLoading(),
+        };
+      }),
     activeId,
     url,
     canGoBack: nav ? nav.canGoBack() : false,
@@ -264,13 +268,17 @@ async function googleSuggestions(q: string): Promise<string[]> {
   }
 }
 
+function createTab(input: string = START, hidden = false): void {
+  // already on the hidden blank home? just focus the address bar
+  if (input === START && activeTab()?.hidden) {
+    focusAddress();
+    return;
+  }
 
-
-function createTab(input: string = START): void {
   const view = new WebContentsView({
     webPreferences: { sandbox: true, contextIsolation: true },
   });
-  const tab: Tab = { id: nextId++, view, favicon: "" };
+  const tab: Tab = { id: nextId++, view, favicon: "", hidden };
   view.setBorderRadius(VIEW_RADIUS);
   const wc = view.webContents;
 
@@ -291,6 +299,7 @@ function createTab(input: string = START): void {
   // Registered before the pushState loop below so state is already up to date.
   wc.on("did-navigate", (_e, url) => {
     tab.favicon = "";
+    if (!isStartUrl(url)) tab.hidden = false;
     view.setBackgroundColor(isStartUrl(url) ? START_BG : "#ffffff");
     recordVisit(tab, true);
   });
@@ -311,13 +320,14 @@ function createTab(input: string = START): void {
     wc.on(evt as any, pushState);
   }
 
-  if (input === START) wc.once("did-finish-load", focusAddress); //i added this because it focus on the bar for a split second and it draw its attention to other part
+  if (input === START) wc.once("did-finish-load", focusAddress);
   tabs.push(tab);
   if (input === START) wc.loadFile(START_PAGE);
   else wc.loadURL(toUrl(input));
   switchTab(tab.id);
-  if (input === START) focusAddress(); //automatic focus on the uh type bar
+  if (input === START) focusAddress();
 }
+
 
 function closeTab(id: number): void {
   const idx = tabs.findIndex((t) => t.id === id);
@@ -329,7 +339,7 @@ function closeTab(id: number): void {
 
   if (tabs.length === 0) {
     activeId = null;
-    createTab(START);
+    createTab(START, true); // blank home, no sidebar entry
   } else if (id === activeId) {
     switchTab(tabs[Math.min(idx, tabs.length - 1)].id);
   } else {
@@ -415,6 +425,7 @@ function createWindow(): void {
       contextIsolation: true,
       sandbox: true,
     },
+  
   });
 
   win.loadFile(path.join(__dirname, "../renderer/index.html"));
@@ -433,7 +444,7 @@ function createWindow(): void {
   suggestView.setBackgroundColor("#2b2b2b");
   suggestView.webContents.loadFile(path.join(__dirname, "../renderer/suggest.html"));
 
-  createTab(START);
+  createTab(START, true);
 }
 
 // --- IPC from the UI ---
