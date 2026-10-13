@@ -570,6 +570,7 @@ ipcMain.on("suggest:hide", () => {
 
 ipcMain.on("suggest:pick", (_e, text: string) => {
   hideSuggest();
+  win.webContents.send("blur-address");
   activeTab()?.view.webContents.loadURL(toUrl(String(text)));
 });
 

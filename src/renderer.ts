@@ -29,6 +29,8 @@
     resizeSidebar(width: number): void;
     onState(cb: (state: UiState) => void): void;
     onFocusAddress(cb: () => void): void;
+    onBlurAddress(cb: () => void): void;
+    
 
     suggest(text: string, rect: { x: number; width: number }): void;
     suggestMove(delta: number): void;
@@ -123,7 +125,11 @@
   api.onFocusAddress(() => {
     address.focus();
     address.select();
+    api.onBlurAddress(() => address.blur());
   });
+
+
+  
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();

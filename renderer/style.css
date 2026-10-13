@@ -6,8 +6,8 @@
   --sidebar-w: 240px;
   --toolbar-h: 48px;
   
-  --tint-a: rgba(150, 150, 150, 0.28);
-  --tint-b: rgba(199, 155, 155, 0.28);
+  --tint-a: rgba(175, 175, 175, 0.28);
+  --tint-b: rgba(155, 192, 199, 0.28);
   --text: #ffffff;
   --muted: rgba(255, 255, 255, 0.7);
   --hover: rgba(255, 255, 255, 0.12);

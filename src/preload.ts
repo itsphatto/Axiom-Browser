@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("state", (_e, state) => cb(state)),
   onFocusAddress: (cb: () => void) =>
     ipcRenderer.on("focus-address", () => cb()),
+  onBlurAddress: (cb: () => void) =>
+    ipcRenderer.on("blur-address", () => cb()),
   //suggestion start
   suggest: (text: string, rect: { x: number; width: number }) =>
     ipcRenderer.send("suggest:query", text, rect),
