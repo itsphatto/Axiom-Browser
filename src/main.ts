@@ -7,6 +7,8 @@ import {
   net,
   MenuItemConstructorOptions,
 } from "electron";
+
+
 import * as fs from "fs";
 import * as path from "path";
 
@@ -28,8 +30,8 @@ interface Tab {
   view: WebContentsView;
   favicon: string;
   hidden?: boolean;
+  url?: string;        
 }
-
 
 interface Visit {
   url: string;
@@ -82,6 +84,44 @@ function saveHistorySoon(): void {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveHistoryNow, 1000);
 }
+
+
+// ---------- saved tabs ----------
+let tabsTimer: NodeJS.Timeout | null = null;
+
+function tabsFile(): string {
+  return path.join(app.getPath("userData"), "tabs.json");
+}
+
+function saveTabsNow(): void {
+  if (tabsTimer) { clearTimeout(tabsTimer); tabsTimer = null; }
+  const real = tabs.filter((t) => t.url && /^https?:\/\//i.test(t.url));
+  const active = real.findIndex((t) => t.id === activeId);
+  try {
+    fs.writeFileSync(
+      tabsFile(),
+      JSON.stringify({ urls: real.map((t) => t.url), active: Math.max(0, active) })
+    );
+  } catch { /* not fatal */ }
+}
+
+function saveTabsSoon(): void {
+  if (tabsTimer) clearTimeout(tabsTimer);
+  tabsTimer = setTimeout(saveTabsNow, 500);
+}
+
+function loadSavedTabs(): { urls: string[]; active: number } {
+  try {
+    const d = JSON.parse(fs.readFileSync(tabsFile(), "utf8"));
+    const urls = (Array.isArray(d.urls) ? d.urls : []).filter(
+      (u: unknown) => typeof u === "string" && /^https?:\/\//i.test(u)
+    );
+    return { urls, active: Number(d.active) || 0 };
+  } catch {
+    return { urls: [], active: 0 };
+  }
+}
+
 
 function recordVisit(tab: Tab, bump: boolean): void {
   const wc = tab.view.webContents;
@@ -156,6 +196,12 @@ function pushState(): void {
   const active = activeTab();
   const nav = active?.view.webContents.navigationHistory;
 
+  for (const t of tabs) {
+    if (!t.view.webContents.isDestroyed()) t.url = t.view.webContents.getURL();
+  }
+  saveTabsSoon();
+  
+
   // Hide the internal file path of the start page in the address bar
   const rawUrl = active ? active.view.webContents.getURL() : "";
   const url = isStartUrl(rawUrl) ? "" : rawUrl;
@@ -209,6 +255,18 @@ function switchTab(id: number): void {
   layout();
   pushState();
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ---------- suggestions ----------
 interface SuggestItem { text: string; sub?: string }
@@ -441,7 +499,15 @@ function createWindow(): void {
   suggestView.setBackgroundColor("#2b2b2b");
   suggestView.webContents.loadFile(path.join(__dirname, "../renderer/suggest.html"));
 
-  createTab(START, true);
+  const saved = loadSavedTabs();
+  if (saved.urls.length) {
+    const ids: number[] = [];
+    for (const u of saved.urls) { createTab(u); ids.push(tabs[tabs.length - 1].id); }
+    switchTab(ids[Math.min(saved.active, ids.length - 1)]);
+  } else {
+    createTab(START, true);
+  }
+
 }
 
 // --- IPC from the UI ---
@@ -516,7 +582,7 @@ app.whenReady().then(() => {
 });
 
 app.on("before-quit", saveHistoryNow);
-
+app.on("before-quit", () => { saveHistoryNow(); saveTabsNow(); });
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
