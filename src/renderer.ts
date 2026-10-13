@@ -55,7 +55,7 @@
   function clampSidebar(px: number): number {
     if (px < SIDEBAR_SNAP) return SIDEBAR_RAIL;
     return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(px)));
-}
+  }
 
   function setSidebarVar(px: number): void {
     root.style.setProperty("--sidebar-w", px + "px");
@@ -74,17 +74,17 @@
       const icon = document.createElement("span");
       icon.className = "tab-icon";
 
-     if (tab.loading) {
-      icon.classList.add("spinner");
-    } else if (tab.favicon) {
-      const img = document.createElement("img");
-      img.src = tab.favicon;
-      img.alt = "";
-      icon.appendChild(img);
-    } else {
-      icon.classList.add("letter");
-      icon.textContent = (tab.title.trim()[0] || "•").toUpperCase();
-    }
+      if (tab.loading) {
+        icon.classList.add("spinner");
+      } else if (tab.favicon) {
+        const img = document.createElement("img");
+        img.src = tab.favicon;
+        img.alt = "";
+        icon.appendChild(img);
+      } else {
+        icon.classList.add("letter");
+        icon.textContent = (tab.title.trim()[0] || "•").toUpperCase();
+      }
 
       const title = document.createElement("span");
       title.className = "tab-title";

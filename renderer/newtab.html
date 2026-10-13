@@ -6,17 +6,20 @@
     http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src 'unsafe-inline';"
   />
-  <title>New Tab</title>
+  <title>Axiom Home</title>
   <style>
     html, body {
       height: 100%;
       margin: 0;
       overflow: hidden;
+      background: transparent;
     }
 
     body {
-      border-radius: 12px; /* match VIEW_RADIUS in main.ts */
-      background: linear-gradient(135deg, #25285a 0%, #2b2e5f 45%, #2e2338 100%);
+      border-radius: 12px;
+      background: rgba(150, 150, 150, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
     }
   </style>
 </head>

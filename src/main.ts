@@ -2,7 +2,6 @@ import {
   app,
   BrowserWindow,
   Menu,
-  WebContents,
   WebContentsView,
   ipcMain,
   MenuItemConstructorOptions,
@@ -20,8 +19,8 @@ const VIEW_GAP = 8; // space around the page so the rounded corners show
 const VIEW_RADIUS = 12;
 const START = "dev-x://start"; // internal marker for the start page, not a real URL
 const START_PAGE = path.join(__dirname, "../renderer/newtab.html");
+const START_BG = "#00000000"; // transparent so the window blur shows through
 const MAX_HISTORY = 50;
-const START_BG = "#25285a";
 
 interface Tab {
   id: number;
@@ -43,7 +42,7 @@ let nextId = 1;
 let sidebarW = SIDEBAR_DEFAULT;
 let sidebarVisible = true;
 
-// ---------- history (feeds "Recently visited" on the start page) ----------
+// ---------- history ----------
 let history: Visit[] = [];
 let saveTimer: NodeJS.Timeout | null = null;
 
@@ -109,8 +108,6 @@ function recordVisit(tab: Tab, bump: boolean): void {
 function isStartUrl(url: string): boolean {
   return url.includes("newtab.html");
 }
-
-
 
 // ---------- navigation helpers ----------
 /** URL -> site. Anything else -> Google search. Only http(s) is allowed. */
@@ -212,6 +209,7 @@ function createTab(input: string = START): void {
   view.setBorderRadius(VIEW_RADIUS);
   const wc = view.webContents;
 
+  // The start page is transparent; real sites are opaque white.
   view.setBackgroundColor(input === START ? START_BG : "#ffffff");
 
   wc.setWindowOpenHandler(({ url }) => {
@@ -326,26 +324,19 @@ function buildMenu(): void {
 }
 
 function createWindow(): void {
-  // Blur/translucent window: Windows 11 (acrylic) and macOS (vibrancy).
-  // Linux has no equivalent, so it keeps a solid dark background.
-  const translucent = process.platform === "win32" || process.platform === "darwin";
-
   win = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 700,
     minHeight: 400,
-    backgroundColor: translucent ? "#00000000" : "#16161a",
-    ...(process.platform === "win32"
-      ? { backgroundMaterial: "acrylic" as const }
-      : {}),
-    ...(process.platform === "darwin"
-      ? { vibrancy: "under-window" as const, visualEffectState: "active" as const }
-      : {}),
+    backgroundColor: "#00000000",
+    // blur behind the window
+    backgroundMaterial: "acrylic", // Windows 11
+    vibrancy: "under-window",      // macOS
     titleBarStyle: "hidden",
     titleBarOverlay: {
       // native minimize / maximize / close buttons
-      color: translucent ? "#00000000" : "#16161a",
+      color: "#00000000",
       symbolColor: "#ffffff",
       height: TOOLBAR_H,
     },
