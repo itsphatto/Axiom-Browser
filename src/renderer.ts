@@ -15,6 +15,7 @@
     canGoForward: boolean;
     sidebarVisible: boolean;
     sidebarWidth: number;
+    theme: string;
   }
   interface Api {
     ready(): void;
@@ -30,6 +31,7 @@
     onState(cb: (state: UiState) => void): void;
     onFocusAddress(cb: () => void): void;
     onBlurAddress(cb: () => void): void;
+    setTheme(theme: string): void;
     
 
     suggest(text: string, rect: { x: number; width: number }): void;
@@ -56,6 +58,7 @@
   const reloadBtn = document.getElementById("reload") as HTMLButtonElement;
   const form = document.getElementById("address-form") as HTMLFormElement;
   const address = document.getElementById("address") as HTMLInputElement;
+  const themeSelect = document.getElementById("theme") as HTMLSelectElement;
 
   let dragging = false;
 
@@ -120,15 +123,17 @@
 
     document.body.classList.toggle("sidebar-hidden", !state.sidebarVisible);
     if (!dragging) setSidebarVar(state.sidebarVisible ? state.sidebarWidth : 0);
+
+    document.body.dataset.theme = state.theme;
+    themeSelect.value = state.theme;
   });
 
   api.onFocusAddress(() => {
     address.focus();
     address.select();
-    api.onBlurAddress(() => address.blur());
   });
 
-
+  api.onBlurAddress(() => address.blur());
   
 
   form.addEventListener("submit", (e) => {
@@ -163,8 +168,15 @@
     else if (e.key === "Escape") api.suggestHide();
   });
 
+
+  themeSelect.addEventListener("change", () => {
+  api.setTheme(themeSelect.value);
+  themeSelect.blur();
+  });
+
   address.addEventListener("blur", () => api.suggestHide());
   api.onSuggestFill((text) => { address.value = text; });
+
 
 
   

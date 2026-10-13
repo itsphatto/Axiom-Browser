@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="panel-shadow"></div>
   <aside id="sidebar">
     <div id="sidebar-drag"></div>
     <button id="new-tab"><span>+</span><span class="label"> New Tab</span></button>
@@ -39,6 +40,14 @@
         placeholder="Search Google or enter a URL"
       />
     </form>
+
+    <select id="theme" title="Theme">
+      <option value="translucent">Translucent</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+
+
   </header>
 
   <div id="resizer" title="Drag to resize, double-click to reset"></div>

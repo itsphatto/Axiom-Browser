@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("api", {
   forward: () => ipcRenderer.send("nav:forward"),
   reload: () => ipcRenderer.send("nav:reload"),
   toggleSidebar: () => ipcRenderer.send("sidebar:toggle"),
+  setTheme: (theme: string) => ipcRenderer.send("theme:set", theme),
   resizeSidebar: (width: number) => ipcRenderer.send("sidebar:resize", width),
   onState: (cb: (state: unknown) => void) =>
     ipcRenderer.on("state", (_e, state) => cb(state)),

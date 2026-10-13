@@ -6,6 +6,7 @@ import {
   ipcMain,
   net,
   MenuItemConstructorOptions,
+  nativeTheme,
 } from "electron";
 
 
@@ -47,6 +48,16 @@ let nextId = 1;
 let sidebarW = SIDEBAR_DEFAULT;
 let sidebarVisible = true;
 
+
+type Theme = "translucent" | "light" | "dark";
+const THEMES: Theme[] = ["translucent", "light", "dark"];
+let theme: Theme = "translucent";
+
+
+
+
+
+
 // ---------- history ----------
 let history: Visit[] = [];
 let saveTimer: NodeJS.Timeout | null = null;
@@ -83,6 +94,49 @@ function saveHistoryNow(): void {
 function saveHistorySoon(): void {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveHistoryNow, 1000);
+}
+
+
+
+
+// ---------- settings / theme ----------
+function settingsFile(): string {
+  return path.join(app.getPath("userData"), "settings.json");
+}
+
+function loadSettings(): void {
+  try {
+    const data = JSON.parse(fs.readFileSync(settingsFile(), "utf8"));
+    if (THEMES.includes(data?.theme)) theme = data.theme;
+  } catch {
+    /* first run */
+  }
+}
+
+function saveSettings(): void {
+  try {
+    fs.writeFileSync(settingsFile(), JSON.stringify({ theme }));
+  } catch {
+    /* not fatal */
+  }
+}
+
+function applyTheme(next: Theme): void {
+  theme = next;
+  const translucent = next === "translucent";
+  nativeTheme.themeSource = translucent ? "system" : next;
+
+  if (process.platform === "win32") win.setBackgroundMaterial(translucent ? "acrylic" : "none");
+  if (process.platform === "darwin") win.setVibrancy(translucent ? "under-window" : null);
+  win.setBackgroundColor(translucent ? "#00000000" : next === "light" ? "#f3f3f3" : "#1e1e1e");
+
+  if (process.platform !== "darwin") {
+    win.setTitleBarOverlay({
+      color: "#00000000",
+      symbolColor: next === "light" ? "#000000" : "#ffffff",
+      height: TOOLBAR_H,
+    });
+  }
 }
 
 
@@ -224,6 +278,8 @@ function pushState(): void {
     canGoForward: nav ? nav.canGoForward() : false,
     sidebarVisible,
     sidebarWidth: sidebarW,
+    theme,
+    
   });
 }
 
@@ -482,7 +538,7 @@ function createWindow(): void {
     },
   
   });
-
+  applyTheme(theme);
   win.loadFile(path.join(__dirname, "../renderer/index.html"));
   win.on("resize", layout);
 
@@ -554,6 +610,15 @@ ipcMain.on("suggest:query", (_e, text: string, rect: { x: number; width: number 
   }, 120);
 });
 
+
+ipcMain.on("theme:set", (_e, next: string) => {
+  if (!THEMES.includes(next as Theme)) return;
+  applyTheme(next as Theme);
+  saveSettings();
+  pushState();
+});
+
+
 ipcMain.on("suggest:move", (_e, delta: number) => {
   if (!suggestShown) return;
   const slots = suggestItems.length + 1; // items + "what I typed"
@@ -576,6 +641,7 @@ ipcMain.on("suggest:pick", (_e, text: string) => {
 
 app.whenReady().then(() => {
   loadHistory();
+  loadSettings();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
