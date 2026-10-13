@@ -64,9 +64,7 @@ body.resizing {
   -webkit-app-region: drag;
 }
 
-/* Invisible grab handle on the sidebar's right edge.
-   Kept fully inside the sidebar because the page view covers
-   everything to the right of it. */
+
 #resizer {
   position: fixed;
   top: var(--toolbar-h);

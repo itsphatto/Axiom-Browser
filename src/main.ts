@@ -83,7 +83,6 @@ function saveHistorySoon(): void {
   saveTimer = setTimeout(saveHistoryNow, 1000);
 }
 
-/** bump = a real navigation (move to top). Otherwise only refresh title/favicon. */
 function recordVisit(tab: Tab, bump: boolean): void {
   const wc = tab.view.webContents;
   const url = wc.getURL();
@@ -112,8 +111,6 @@ function isStartUrl(url: string): boolean {
   return url.includes("newtab.html");
 }
 
-// ---------- navigation helpers ----------
-/** URL -> site. Anything else -> Google search. Only http(s) is allowed. */
 function toUrl(input: string): string {
   const text = input.trim();
 
