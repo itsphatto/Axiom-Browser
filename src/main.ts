@@ -4,6 +4,7 @@ import {
   Menu,
   WebContentsView,
   ipcMain,
+  net,
   MenuItemConstructorOptions,
 } from "electron";
 import * as fs from "fs";
@@ -145,6 +146,12 @@ function layout(): void {
   });
 }
 
+
+function focusAddress(): void {
+  win.webContents.focus();
+  win.webContents.send("focus-address");
+}
+
 function pushState(): void {
   if (!win || win.isDestroyed()) return;
   const active = activeTab();
@@ -159,7 +166,7 @@ function pushState(): void {
       const wc = t.view.webContents;
       return {
         id: t.id,
-        title: wc.getTitle() || wc.getURL() || "Home",
+        title: wc.getTitle() || wc.getURL() || "Axiom",
         favicon: t.favicon,
         loading: wc.isLoading(),
       };
@@ -189,6 +196,7 @@ function toggleSidebar(): void {
 }
 
 function switchTab(id: number): void {
+  hideSuggest();
   const next = tabs.find((t) => t.id === id);
   if (!next) return;
 
@@ -200,6 +208,63 @@ function switchTab(id: number): void {
   layout();
   pushState();
 }
+
+// ---------- suggestions ----------
+interface SuggestItem { text: string; sub?: string }
+
+let suggestView: WebContentsView;
+let suggestShown = false;
+let suggestItems: SuggestItem[] = [];
+let suggestIndex = -1; // -1 = nothing selected (shows what the user typed)
+let suggestTyped = "";
+let suggestRect = { x: 0, width: 0 };
+let suggestSeq = 0;
+let suggestTimer: NodeJS.Timeout | null = null;
+let suggestHideTimer: NodeJS.Timeout | null = null;
+
+function hideSuggest(): void {
+  suggestSeq++; // invalidates any in-flight request
+  if (!suggestShown) return;
+  suggestShown = false;
+  win.contentView.removeChildView(suggestView);
+}
+
+function renderSuggest(): void {
+  if (!suggestItems.length) return hideSuggest();
+  const height = Math.min(suggestItems.length, 8) * 36 + 8;
+  suggestView.setBounds({
+    x: suggestRect.x,
+    y: TOOLBAR_H - 4,
+    width: suggestRect.width,
+    height,
+  });
+  win.contentView.addChildView(suggestView); // re-adding moves it to the top
+  suggestShown = true;
+  suggestView.webContents.send("suggest:items", suggestItems, suggestIndex);
+}
+
+function localSuggestions(q: string): SuggestItem[] {
+  const needle = q.toLowerCase();
+  return history
+    .filter((v) => v.url.toLowerCase().includes(needle) || v.title.toLowerCase().includes(needle))
+    .slice(0, 3)
+    .map((v) => ({ text: v.url, sub: v.title }));
+}
+
+async function googleSuggestions(q: string): Promise<string[]> {
+  try {
+    const res = await net.fetch(
+      "https://suggestqueries.google.com/complete/search?client=firefox&q=" +
+        encodeURIComponent(q)
+    );
+    const data = await res.json();
+    return Array.isArray(data?.[1]) ? data[1].slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+}
+
+
 
 function createTab(input: string = START): void {
   const view = new WebContentsView({
@@ -246,11 +311,12 @@ function createTab(input: string = START): void {
     wc.on(evt as any, pushState);
   }
 
+  if (input === START) wc.once("did-finish-load", focusAddress); //i added this because it focus on the bar for a split second and it draw its attention to other part
   tabs.push(tab);
   if (input === START) wc.loadFile(START_PAGE);
   else wc.loadURL(toUrl(input));
   switchTab(tab.id);
-  win.webContents.send("focus-address");
+  if (input === START) focusAddress(); //automatic focus on the uh type bar
 }
 
 function closeTab(id: number): void {
@@ -280,7 +346,11 @@ function buildMenu(): void {
     {
       label: "Tab",
       submenu: [
-        { label: "Home", accelerator: "CmdOrCtrl+T", click: () => createTab(START) },
+        { label: "Axiom",
+          accelerator: "CmdOrCtrl+T",
+          click: () => createTab(START)
+        },
+
         {
           label: "Close Tab",
           accelerator: "CmdOrCtrl+W",
@@ -294,7 +364,7 @@ function buildMenu(): void {
         {
           label: "Focus Address Bar",
           accelerator: "CmdOrCtrl+L",
-          click: () => win.webContents.send("focus-address"),
+          click: () => focusAddress(),
         },
         {
           label: "Reload",
@@ -351,6 +421,18 @@ function createWindow(): void {
   win.on("resize", layout);
 
   buildMenu();
+
+    suggestView = new WebContentsView({
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      sandbox: true,
+    },
+  });
+  suggestView.setBorderRadius(10);
+  suggestView.setBackgroundColor("#2b2b2b");
+  suggestView.webContents.loadFile(path.join(__dirname, "../renderer/suggest.html"));
+
   createTab(START);
 }
 
@@ -360,6 +442,7 @@ ipcMain.on("tab:new", () => createTab(START));
 ipcMain.on("tab:close", (_e, id: number) => closeTab(id));
 ipcMain.on("tab:switch", (_e, id: number) => switchTab(id));
 ipcMain.on("nav:go", (_e, input: string) => {
+  hideSuggest();
   const text = String(input).trim();
   if (!text) return;
   activeTab()?.view.webContents.loadURL(toUrl(text));
@@ -369,6 +452,52 @@ ipcMain.on("nav:forward", () => activeTab()?.view.webContents.navigationHistory.
 ipcMain.on("nav:reload", () => activeTab()?.view.webContents.reload());
 ipcMain.on("sidebar:toggle", () => toggleSidebar());
 ipcMain.on("sidebar:resize", (_e, width: number) => setSidebarWidth(Number(width)));
+//suggest ipc
+ipcMain.on("suggest:query", (_e, text: string, rect: { x: number; width: number }) => {
+  if (suggestHideTimer) clearTimeout(suggestHideTimer);
+  if (suggestTimer) clearTimeout(suggestTimer);
+
+  const q = String(text).trim();
+  if (!q) return hideSuggest();
+
+  const seq = ++suggestSeq;
+  suggestRect = { x: Number(rect?.x) || 0, width: Number(rect?.width) || 0 };
+  suggestTyped = String(text);
+  suggestIndex = -1;
+  suggestItems = localSuggestions(q);
+  renderSuggest();
+
+  if (/^https?:\/\//i.test(q)) return; // typing a URL, no search suggestions
+  suggestTimer = setTimeout(async () => {
+    const remote = await googleSuggestions(q);
+    if (seq !== suggestSeq) return; // user kept typing or closed it
+    const seen = new Set(suggestItems.map((i) => i.text));
+    suggestItems = [
+      ...suggestItems,
+      ...remote.filter((s) => !seen.has(s)).map((s) => ({ text: s })),
+    ];
+    renderSuggest();
+  }, 120);
+});
+
+ipcMain.on("suggest:move", (_e, delta: number) => {
+  if (!suggestShown) return;
+  const slots = suggestItems.length + 1; // items + "what I typed"
+  suggestIndex = ((((suggestIndex + 1 + delta) % slots) + slots) % slots) - 1;
+  const text = suggestIndex === -1 ? suggestTyped : suggestItems[suggestIndex].text;
+  win.webContents.send("suggest:fill", text);
+  suggestView.webContents.send("suggest:items", suggestItems, suggestIndex);
+});
+
+// small delay so a click on the dropdown lands before the input's blur hides it
+ipcMain.on("suggest:hide", () => {
+  suggestHideTimer = setTimeout(hideSuggest, 150);
+});
+
+ipcMain.on("suggest:pick", (_e, text: string) => {
+  hideSuggest();
+  activeTab()?.view.webContents.loadURL(toUrl(String(text)));
+});
 
 app.whenReady().then(() => {
   loadHistory();

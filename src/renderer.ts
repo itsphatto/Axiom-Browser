@@ -29,6 +29,11 @@
     resizeSidebar(width: number): void;
     onState(cb: (state: UiState) => void): void;
     onFocusAddress(cb: () => void): void;
+
+    suggest(text: string, rect: { x: number; width: number }): void;
+    suggestMove(delta: number): void;
+    suggestHide(): void;
+    onSuggestFill(cb: (text: string) => void): void;
   }
 
   const SIDEBAR_DEFAULT = 240;
@@ -140,6 +145,23 @@
     api.resizeSidebar(width); // resizes the page view in the main process
   });
 
+
+    address.addEventListener("input", () => {
+    const r = address.getBoundingClientRect();
+    api.suggest(address.value, { x: Math.round(r.left), width: Math.round(r.width) });
+  });
+
+  address.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); api.suggestMove(1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); api.suggestMove(-1); }
+    else if (e.key === "Escape") api.suggestHide();
+  });
+
+  address.addEventListener("blur", () => api.suggestHide());
+  api.onSuggestFill((text) => { address.value = text; });
+
+
+  
   const stopDrag = (e: PointerEvent): void => {
     if (!dragging) return;
     dragging = false;
@@ -157,6 +179,7 @@
   backBtn.addEventListener("click", () => api.back());
   forwardBtn.addEventListener("click", () => api.forward());
   reloadBtn.addEventListener("click", () => api.reload());
+  
 
   api.ready();
 })();
