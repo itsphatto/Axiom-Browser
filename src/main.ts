@@ -588,7 +588,10 @@ ipcMain.on("suggest:query", (_e, text: string, rect: { x: number; width: number 
   if (suggestTimer) clearTimeout(suggestTimer);
 
   const q = String(text).trim();
-  if (!q) return hideSuggest();
+  if (!q) {
+    hideSuggest();
+    return;
+  }
 
   const seq = ++suggestSeq;
   suggestRect = { x: Number(rect?.x) || 0, width: Number(rect?.width) || 0 };
@@ -598,15 +601,20 @@ ipcMain.on("suggest:query", (_e, text: string, rect: { x: number; width: number 
   renderSuggest();
 
   if (/^https?:\/\//i.test(q)) return; // typing a URL, no search suggestions
+
   suggestTimer = setTimeout(async () => {
-    const remote = await googleSuggestions(q);
-    if (seq !== suggestSeq) return; // user kept typing or closed it
-    const seen = new Set(suggestItems.map((i) => i.text));
-    suggestItems = [
-      ...suggestItems,
-      ...remote.filter((s) => !seen.has(s)).map((s) => ({ text: s })),
-    ];
-    renderSuggest();
+    try {
+      const remote = await googleSuggestions(q);
+      if (seq !== suggestSeq) return; // user kept typing or closed it
+      const seen = new Set(suggestItems.map((i) => i.text));
+      suggestItems = [
+        ...suggestItems,
+        ...remote.filter((s) => !seen.has(s)).map((s) => ({ text: s })),
+      ];
+      renderSuggest();
+    } catch (err) {
+      console.error("Failed to fetch suggestions:", err);
+    }
   }, 120);
 });
 
